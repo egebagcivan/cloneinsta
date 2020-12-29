@@ -15,7 +15,7 @@
       />
     </div>
     <div class="text-center q-pa-md">
-      <q-btn v-if="hasCameraSupport" @click="captureImage" size=" lg" round color="grey-10" icon="eva-camera" />
+      <q-btn v-if="hasCameraSupport" @click="captureImage" :disable="imageCaptured" size=" lg" round color="grey-10" icon="eva-camera" />
       
       <q-file v-else @input="captureImageFallback" label="Choose an image" outlined accept="image/*" v-model="imageUpload">
         <template v-slot:prepend>
@@ -24,7 +24,7 @@
       </q-file>
 
       <div class="row justify-center q-ma-md">
-        <q-input class="col col-sm-6" v-model="post.caption" label="Caption" dense />
+        <q-input class="col col-sm-6" v-model="post.caption" label="Caption *" dense />
       </div>
       <div class="row justify-center q-ma-md">
         <q-input :loading="locationLoading" class="col col-sm-6" v-model="post.location" label="Location" dense >
@@ -34,7 +34,7 @@
         </q-input>
       </div>
       <div class="row justify-center q-mt-lg">
-        <q-btn unelevated rounded color="primary" label="Post Image" />
+        <q-btn :disable="!post.caption || !post.photo" @click="addPost()" unelevated rounded color="primary" label="Post Image" />
       </div>
     </div>
   </q-page>
@@ -167,6 +167,35 @@ export default {
         message: 'Could not found your location.'
       })
       this.locationLoading = false
+    },
+    addPost() {
+      this.$q.loading.show()
+      let formData = new FormData()
+      formData.append('id', this.post.id)
+      formData.append('caption', this.post.caption)
+      formData.append('location', this.post.location)
+      formData.append('date', this.post.date)
+      formData.append('file', this.post.photo, this.post.id + '.png')
+
+      this.$axios.post(`${process.env.API}/createPost`, formData).then
+      (response => {
+        console.log(response)
+        this.$router.push('/')
+         this.$q.notify({
+        message: 'Post created.',
+        actions: [
+          { label: 'Dismiss', color: 'white' }
+        ]
+      })
+      this.$q.loading.hide()
+      }).catch(err => {
+        console.log(err)
+        this.$q.dialog({
+        title: 'Error',
+        message: 'Sorry, could not create post!'
+      })
+      this.$q.loading.hide()
+      })
     }
   },
   mounted() {
